@@ -1,11 +1,10 @@
 {
   "name": "levelidb",
-  "version": "0.2.6",
+  "version": "1.0.0",
   "description": "A levelup interface on top of indexeddb",
   "keywords": [],
   "author": "Raynos <raynos2@gmail.com>",
   "repository": "git://github.com/Raynos/levelidb.git",
-  "main": "server",
   "browserify": "index",
   "homepage": "https://github.com/Raynos/levelidb",
   "contributors": [
@@ -19,22 +18,13 @@
   },
   "dependencies": {
     "xtend": "~1.0.3",
-    "map-async": "~0.1.1",
-    "idb-wrapper": "git://github.com/Raynos/IDBWrapper",
-    "read-stream": "~0.4.8",
-    "end-stream": "~0.1.0",
-    "level-encoding": "~0.1.0",
-    "level-write-stream": "~0.1.0"
+    "idb-wrapper": "git://github.com/Raynos/IDBWrapper"
   },
   "devDependencies": {
-    "tap": "~0.3.1",
-    "browserify-server": "~2.1.10",
-    "write-stream": "~0.4.3",
-    "live-reload": "~0.2.0",
-    "wr": "~1.2.1"
-  },
-  "optionalDependencies": {
-    "levelup": "~0.3.0"
+    "abstract-leveldown": "*",
+    "tape": "*",
+    "beefy": "*",
+    "browserify": "*"
   },
   "licenses": [
     {
@@ -43,6 +33,6 @@
     }
   ],
   "scripts": {
-    "test": "tap --stderr --tap ./test"
+    "start": "beefy test.js"
   }
 }

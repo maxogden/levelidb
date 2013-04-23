@@ -1,11 +1,5 @@
 var IDBWrapper = require("idb-wrapper")
     , extend = require("xtend")
-    , mapAsync = require("map-async")
-    , EventEmitter = require("events").EventEmitter
-    , toKeyBuffer = require("level-encoding/toKeyBuffer")
-    , toValueBuffer = require("level-encoding/toValueBuffer")
-    , toValueEncoding = require("level-encoding/toValueEncoding")
-    , Streams = require("./stream")
     , getCallback = require("./utils/getCallback")
     , getOptions = require("./utils/getOptions")
 
@@ -18,7 +12,7 @@ var IDBWrapper = require("idb-wrapper")
 module.exports = idbup
 
 function idbup(path, defaults, callback) {
-    var db = extend(new EventEmitter(), {
+    var db = extend(new Object(), {
             put: onOpen(put)
             , del: onOpen(del)
             , get: onOpen(get)
@@ -38,7 +32,6 @@ function idbup(path, defaults, callback) {
 
     defaults = extend({}, defaultOptions, defaults || {})
 
-    extend(db, Streams(onReady, db, defaults))
 
     open(callback)
 
@@ -47,38 +40,31 @@ function idbup(path, defaults, callback) {
     function put(key, value, options, callback) {
         callback = getCallback(options, callback)
         options = getOptions(defaults, options)
-        var _key = toKeyBuffer(key, options)
-            , _value = toValueBuffer(value, options)
-
+        
         idb.put({
-            value: _value
-            , id: _key
+            value: value
+            , id: key
         }, function () {
-            db.emit("put", key, value)
             callback && callback(null)
-        }, callback || emit)
+        }, callback)
     }
 
     function del(key, options, callback) {
         callback = getCallback(options, callback)
         options = getOptions(defaults, options)
-        var _key = toKeyBuffer(key, options)
 
-        idb.remove(_key, function () {
-            db.emit("del", key)
+        idb.remove(key, function () {
             callback && callback(null)
-        }, callback || emit)
+        }, callback)
     }
 
     function get(key, options, callback) {
         callback = getCallback(options, callback)
         options = getOptions(defaults, options)
-        key = toKeyBuffer(key, options)
 
         idb.get(key, function (result) {
-            callback && callback(null
-                , toValueEncoding(result, options), key)
-        }, callback || emit)
+            callback && callback(null, result, key)
+        }, callback)
     }
 
     function batch(arr, options, callback) {
@@ -86,14 +72,14 @@ function idbup(path, defaults, callback) {
         options = getOptions(defaults, options)
         var _arr = arr.map(function (item) {
             var result = {}
-                , key = toKeyBuffer(item.key, options)
+                , key = item.key
 
             if (item.type === "del") {
                 result.type = "remove"
             } else if (item.type === "put") {
                 result.type = "put"
                 result.value = {
-                    value: toValueBuffer(item.value, options)
+                    value: item.value
                     , id: key
                 }
             }
@@ -104,12 +90,12 @@ function idbup(path, defaults, callback) {
         })
 
         idbBatch.call(idb, _arr, function () {
-            db.emit("batch", arr)
             callback && callback()
-        }, callback || emit)
+        }, callback)
     }
 
-    function open(callback) {
+    function open(options, callback) {
+        if (!options) callback = options
         if (status === "opening") {
             db.on("ready", callback)
         } else if (status === "opened") {
@@ -130,7 +116,6 @@ function idbup(path, defaults, callback) {
             }, defaults), function () {
                 status = "opened"
                 callback && callback(null, db)
-                db.emit("ready", idb)
             })
         }
     }
@@ -147,14 +132,12 @@ function idbup(path, defaults, callback) {
             if (callback) {
                 return callback(err)
             }
-            db.emit("error", err)
         }
 
         function _close() {
             idb.db.close()
             idb = null
             status = "closed"
-            db.emit("closed")
             callback && callback()
         }
     }
@@ -165,11 +148,6 @@ function idbup(path, defaults, callback) {
 
     function isClosed() {
         return status === "closed"
-    }
-
-
-    function emit(err) {
-        db.emit("error", err)
     }
 
     function onReady(callback) {
